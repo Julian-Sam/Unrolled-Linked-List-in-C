@@ -8,6 +8,7 @@ struct linked_node{
 	struct linked_node* next;
 	// struct linked_node* prev;
 };
+
 typedef struct linked_node node;
 
 struct unrolled_list{
