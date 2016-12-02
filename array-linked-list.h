@@ -1,33 +1,35 @@
 // Client Defined:
 // typedef _______ elem;
+typedef int elem;
+
 
 struct linked_node{
 	elem* data;
 	struct linked_node* next;
-	struct linked_node* prev;
+	// struct linked_node* prev;
 };
-
 typedef struct linked_node node;
 
-struct list{
-	size_t length;
+struct unrolled_list{
 	size_t numNodes;
+	size_t totalElems;
+	size_t nextAvailSpot;
+	size_t slotsPerNode;
 	node* head;
 	node* tail;
 };
+typedef struct unrolled_list ull;
 
+ull* new_unrolled(size_t slotsPerNode);
 
+ull* insert_unrolled(elem e, ull* l);
 
-list* newArray(size_t elementsPerNode);
+elem find_unrolled(size_t i, ull* l);
 
-list* insertPos(elem e, list* l);
+ull* delete_unrolled(elem e, ull* l);
 
-elem getValueAtPos(size_t i, list* l)
+ull* append_unrolled(ull* l1, ull* l2);
 
-list* deletePos(elem e, list* l);
+size_t getSize_unrolled(ull* l);
 
-list* appendArray(list* l1, list* l2);
-
-size_t arraySize(list* l);
-
-void freeArray(list* l);
+void free_unrolled(ull* l);
