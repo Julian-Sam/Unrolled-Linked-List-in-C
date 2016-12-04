@@ -25,8 +25,6 @@ ull* new_unrolled(size_t slotsPerNode);
 
 ull* insert_unrolled(elem e, ull* l);
 
-elem find_unrolled(size_t i, ull* l);
-
 ull* delete_unrolled(elem e, ull* l);
 
 ull* append_unrolled(ull* l1, ull* l2);
