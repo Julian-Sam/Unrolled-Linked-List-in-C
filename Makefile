@@ -1,4 +1,4 @@
-# the compiler: gcc for C program, define as g++ for C++
+# the compiler: gcc for C program
 CC = gcc
 
 # compiler flags:
@@ -6,9 +6,11 @@ CC = gcc
 #  -Wall turns on most, but not all, compiler warnings
 CFLAGS  = -g -Wall
 
-# the build target executable:
-TARGET = unrolled-list
-FINALBUILD = test_file
+#Name of C File
+TARGET = test_file
+
+#Name of executable you want to create
+FINALBUILD = executable_test_file
 
 all: $(TARGET)
 

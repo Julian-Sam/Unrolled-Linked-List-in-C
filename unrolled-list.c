@@ -1,12 +1,7 @@
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
 #include "unrolled-list.h"
-#include <stdbool.h>
-
-
 // Makes a generic node
-// ull* list is passed in to determine slotsPerNode to malloc
+// The ull* list is passed in to determine slotsPerNode to malloc
+// Returns pointer to the new node
 node* makeNewNode(ull* list)
 {
   node* first = malloc(sizeof(node));
@@ -24,8 +19,8 @@ node* makeNewNode(ull* list)
 
 
 // New unrolled linked list.
-// pass in size for slots per node.
-ull* new_unrolled(size_t slotsPerNode)
+// Pass in size for slots per node.
+ull* new_unrolled(size_t slotsPerNode, equiv* equal)
 {
   ull* new = malloc(sizeof(ull));
   if (new == NULL)
@@ -43,13 +38,25 @@ ull* new_unrolled(size_t slotsPerNode)
   new->head = first;
   new->tail = first;
 
+
+
+  // Add the equality function the struct for future comparisions.
+  if (equal == NULL)
+  {
+    fprintf(stderr, "NULL given as equality function \n");
+    return NULL;
+  }
+
+  new->equality = equal;
+
+
   return new;
 }
 
 
 // Find the last node and find nextAvailSpot in the array. Insert in this node.
 // If the next spot updates to a size greater than the limit, then we reset
-// and create a new node.
+// the nextAvailSpot and create a new node.
 ull* insert_unrolled(elem e, ull* list)
 {
     if (list == NULL)
@@ -62,6 +69,7 @@ ull* insert_unrolled(elem e, ull* list)
     list->nextAvailSpot++;
     list->totalElems++;
 
+    // In case we need to make new node
     if (list->nextAvailSpot >= list->slotsPerNode)
     {
       list->nextAvailSpot = 0;
@@ -74,16 +82,7 @@ ull* insert_unrolled(elem e, ull* list)
     return list;
 }
 
-// Check if two elements are equal. Function provided by the client.
-bool unrolled_equality(elem elem1,elem elem2)
-{
-  if (elem1 == elem2)
-    return true;
-  else
-    return false;
-}
-
-
+// Helper function for the delete function. Finds the node before the tail.
 node* findSecondLastTail(ull* list)
 {
   if (list->head == list->tail)
@@ -103,6 +102,8 @@ node* findSecondLastTail(ull* list)
 
 }
 
+
+// Helper function for the delete function. Finds the element at the end.
 elem findLastElem(ull* list)
 {
 
@@ -119,6 +120,7 @@ elem findLastElem(ull* list)
 
   node* temp = list->head;
   node* temp1 = list->head->next;
+  // Go to end
   while (temp != NULL)
   {
     if (temp1 == list->tail)
@@ -132,11 +134,14 @@ elem findLastElem(ull* list)
   return list->head->data[0];
 
 }
+
+// Returns true if the element is the last one in the unrolled linked list
 bool isLastElem(ull* list, node* nodeOfElem, size_t numOfElem)
 {
   if (list->nextAvailSpot == 0)
   {
-    if (findSecondLastTail(list) == nodeOfElem && numOfElem == list->slotsPerNode - 1)
+    if (findSecondLastTail(list) == nodeOfElem &&
+                                    numOfElem == list->slotsPerNode - 1)
       return true;
   }
   else
@@ -150,7 +155,8 @@ bool isLastElem(ull* list, node* nodeOfElem, size_t numOfElem)
 
 // A delete that does not preserve ordering of inserts.
 // Deletes the element from the array and replaces it with
-// the last element of the list.
+// the last element of the list. If the element is the last one, then just
+// adjust metadata and return.
 ull* delete_unrolled(elem e, ull* list)
 {
   node* i;
@@ -164,7 +170,7 @@ ull* delete_unrolled(elem e, ull* list)
   // Find the element to delete, go thru each node and each array to search.
   for (i = list->head; i != NULL && !stop ; i = i->next) {
     for (j = 0; j < list->slotsPerNode && !stop; j++) {
-      if (unrolled_equality(i->data[j],e)) {
+      if ((*list->equality)(i->data[j],e)) {
         nodeOfElem = i;
         numOfElem = j;
         stop = true;
@@ -205,23 +211,40 @@ size_t getSize_unrolled(ull* list)
   return list->totalElems;
 }
 
+// Return number of nodes.
 size_t getNumNodes_unrolled(ull* list)
 {
   return list->numNodes;
 }
 
-void printList(ull* list)
+// Print function, Client must pass in a printing function for the element.
+void printList(ull* list, printElem* printFunction)
 {
   node* i;
   size_t j;
   for (i = list->head; i != NULL; i = i->next) {
     for (j = 0; (i == list->tail && j < list->nextAvailSpot)
                       || (i != list->tail && j < list->slotsPerNode); j++) {
-        printf("%d\n",i->data[j]);
+        (*printFunction)(i->data[j]);
     }
   }
 }
 
+
+bool lookup(elem e, ull* list)
+{
+  node* i;
+  size_t j;
+
+  for (i = list->head; i != NULL; i = i->next) {
+    for (j = 0; j < list->slotsPerNode; j++) {
+      if ((*list->equality)(i->data[j],e)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 // Standard free function. First frees each array, and then frees the
 void free_unrolled(ull* list)
@@ -238,32 +261,12 @@ void free_unrolled(ull* list)
   while (i != NULL)
   {
       free(i->data); // free the array in the node
-      j = i;
-      i = i->next;
+      j = i; // Save the struct itself
+      i = i->next; // get the next struct
       free(j); // free the struct itself
   }
 
 
   free(list); // Free the list header struct
   return;
-}
-
-int main()
-{
-  ull* new = new_unrolled(1);
-
-
-  insert_unrolled(1, new);
-  insert_unrolled(2, new);
-  insert_unrolled(3, new);
-  insert_unrolled(4, new);
-  insert_unrolled(5, new);
-  insert_unrolled(6, new);
-  insert_unrolled(7, new);
-
-
-
-  printList(new);
-  free_unrolled(new);
-  return 0;
 }
